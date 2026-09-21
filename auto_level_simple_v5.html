@@ -1,0 +1,33 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>オートレベル高さ計算</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0b1016;color:#fff;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}.w{max-width:680px;margin:auto;padding:15px}.c{background:#151d26;border:1px solid #293746;border-radius:18px;padding:15px;margin:12px 0}h1{font-size:23px;margin:4px 0}.sub,.note{color:#aab8c6}.sub{font-size:13px}.note{font-size:12px;line-height:1.55}label{display:block;color:#b4c0cc;font-size:13px;margin:10px 0 5px}input,button{width:100%;padding:14px;border-radius:12px;border:1px solid #405064;background:#0d141c;color:#fff;font-size:19px}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}.on{background:#238636;border-color:#58b86b;font-weight:900}.big{text-align:center;font-size:48px;font-weight:900;color:#79c0ff}.fig{background:#fff;color:#111;border-radius:15px;padding:8px;margin-top:12px}svg{width:100%;height:auto;display:block}.act{text-align:center;font-size:27px;font-weight:900;margin:12px}.up{color:#7ee787}.down{color:#ff7b72}.ok{color:#79c0ff}.summary{background:#0d141c;border-radius:12px;padding:11px;line-height:1.7;font-size:14px}</style></head><body><div class="w">
+<h1>📐 オートレベル 高さ計算</h1><div class="sub">機械と基準点の位置関係を選ぶだけ</div>
+<div class="c"><label>基準点はオートレベルより</label><div class="two"><button id="high" class="on">↑ 高い</button><button id="low">↓ 低い</button></div>
+<label>オートレベルから基準点までの高低差（mm）</label><input id="dist" type="number" value="100" inputmode="decimal">
+<div class="note">例：基準点が機械より100mm高い →「高い」＋100。</div>
+<label>基準点でのスタッフ読み（mm）</label><input id="back" type="number" value="1250" inputmode="decimal">
+<label>基準点から仕上がりまで</label><div class="two"><button id="finishHigh" class="on">↑ 上げる</button><button id="finishLow">↓ 下げる</button></div>
+<label>仕上がりの高低差（mm）</label><input id="fd" type="number" value="30" inputmode="decimal"></div>
+
+<div class="c"><div style="text-align:center;color:#abc">目標スタッフ読み</div><div class="big"><span id="target">1220</span><small style="font-size:18px"> mm</small></div>
+<div class="fig"><svg viewBox="0 0 640 410">
+<line x1="20" y1="355" x2="620" y2="355" stroke="#555" stroke-width="5"/>
+<g id="machine"><rect x="35" y="190" width="120" height="44" rx="10" fill="#f5b82e" stroke="#222" stroke-width="4"/><circle cx="160" cy="212" r="16" fill="#444"/><line x1="95" y1="234" x2="95" y2="325" stroke="#333" stroke-width="7"/><line x1="95" y1="295" x2="55" y2="355" stroke="#333" stroke-width="6"/><line x1="95" y1="295" x2="135" y2="355" stroke="#333" stroke-width="6"/><text x="98" y="175" text-anchor="middle" font-size="17" font-weight="700">オートレベル</text></g>
+<line x1="175" y1="212" x2="535" y2="212" stroke="#e53935" stroke-width="4" stroke-dasharray="10 7"/><text x="350" y="198" text-anchor="middle" fill="#c62828">視準線</text>
+<rect x="535" y="45" width="48" height="310" fill="#fff" stroke="#222" stroke-width="4"/><text x="559" y="30" text-anchor="middle" font-size="18">スタッフ</text>
+<line id="bp" x1="270" y1="270" x2="610" y2="270" stroke="#f59e0b" stroke-width="6"/><text id="bt" x="260" y="276" text-anchor="end" fill="#a96100" font-weight="700">基準点</text>
+<line id="fp" x1="270" y1="245" x2="610" y2="245" stroke="#1683d8" stroke-width="6"/><text id="ft" x="260" y="251" text-anchor="end" fill="#1268a0" font-weight="700">仕上がり</text>
+<line id="arr" x1="430" y1="270" x2="430" y2="212" stroke="#444" stroke-width="2" stroke-dasharray="5 5"/><text id="at" x="440" y="245" font-size="16" font-weight="700">100mm</text>
+</svg></div><div id="sum" class="summary"></div></div>
+
+<div class="c"><label>現在のスタッフ読み（任意）</label><input id="cur" type="number" inputmode="decimal" placeholder="例：1232"><div id="act" class="act ok">現在値を入れると表示</div></div>
+<script>
+const $=x=>document.getElementById(x),N=x=>Number(x)||0,F=x=>Number.isInteger(x)?String(x):x.toFixed(1);let bh=1,fh=1;
+function calc(){let d=Math.abs(N($('dist').value)),bs=N($('back').value),fd=Math.abs(N($('fd').value));let delta=fh*fd,target=bs-delta;$('target').textContent=F(target);
+$('high').className=bh===1?'on':'';$('low').className=bh===-1?'on':'';$('finishHigh').className=fh===1?'on':'';$('finishLow').className=fh===-1?'on':'';
+let baseY=bh===1?155:285, finishY=baseY-(fh*55);$('bp').setAttribute('y1',baseY);$('bp').setAttribute('y2',baseY);$('bt').setAttribute('y',baseY+6);$('bt').textContent='基準点（機械より'+(bh===1?'高い':'低い')+'）';
+$('fp').setAttribute('y1',finishY);$('fp').setAttribute('y2',finishY);$('ft').setAttribute('y',finishY+6);
+$('arr').setAttribute('y1',baseY);$('arr').setAttribute('y2',212);$('at').setAttribute('y',(baseY+212)/2);$('at').textContent=F(d)+'mm';
+$('sum').innerHTML='基準点：オートレベルより <b>'+F(d)+'mm '+(bh===1?'高い':'低い')+'</b><br>仕上がり：基準点より <b>'+F(fd)+'mm '+(fh===1?'上':'下')+'</b><br>基準読み '+F(bs)+'mm → 目標読み <b>'+F(target)+'mm</b>';
+let v=$('cur').value;if(v===''){$('act').className='act ok';$('act').textContent='現在値を入れると表示';return}let z=Number(v)-target;if(Math.abs(z)<.01){$('act').className='act ok';$('act').textContent='✓ 目標ピッタリ'}else if(z>0){$('act').className='act up';$('act').textContent='↑ あと '+F(Math.abs(z))+'mm 上げる'}else{$('act').className='act down';$('act').textContent='↓ あと '+F(Math.abs(z))+'mm 下げる'}}
+$('high').onclick=()=>{bh=1;calc()};$('low').onclick=()=>{bh=-1;calc()};$('finishHigh').onclick=()=>{fh=1;calc()};$('finishLow').onclick=()=>{fh=-1;calc()};['dist','back','fd','cur'].forEach(x=>$(x).oninput=calc);calc();
+</script></div></body></html>
