@@ -1,0 +1,51 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>オートレベル計算</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#0b1016;color:#fff;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}.w{max-width:620px;margin:auto;padding:16px}.card{background:#151d26;border:1px solid #2d3b49;border-radius:18px;padding:16px;margin:12px 0}h1{font-size:23px}.q{font-size:14px;color:#b9c5d1;margin:10px 0 7px}.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}button,input{width:100%;border:1px solid #46586b;border-radius:13px;padding:14px;background:#0d141c;color:#fff;font-size:18px}button.on{background:#238636;border-color:#65c777;font-weight:900}input{font-size:22px;font-weight:800}.result{text-align:center;font-size:55px;font-weight:900;color:#79c0ff}.eq{text-align:center;font-size:19px;margin-top:6px}.hint{color:#aab8c6;font-size:12px;line-height:1.55}.diagram{background:white;border-radius:14px;padding:8px;margin-top:14px}svg{width:100%;height:auto;display:block}.reset{background:#6e2830;margin-top:12px;font-weight:800}</style></head><body><div class="w">
+<h1>📐 オートレベル スタッフ読み計算</h1>
+<div class="card">
+<div class="q">① 基準点はオートレベル（視準線）よりどっち？</div>
+<div class="two"><button id="below" class="on">↓ 480mm 下</button><button id="above">↑ 480mm 上</button></div>
+<div class="q">オートレベル ⇄ 基準点 の高低差（mm）</div><input id="a" type="number" value="480" inputmode="decimal">
+<div class="q">② 基準点のGL高さ（mm）</div>
+<input id="gl" type="number" value="0" inputmode="decimal" placeholder="例：-200 / 0 / 200">
+<div class="hint">GL-200 → -200　／　GL±0 → 0　／　GL+200 → 200</div>
+<div class="q">③ 求めたい場所は基準点からどっち？</div>
+<div class="two"><button id="targetBelow" class="on">↓ 下</button><button id="targetAbove">↑ 上</button></div>
+<div class="q">基準点 ⇄ 求めたい場所 の高低差（mm）</div><input id="b" type="number" value="5600" inputmode="decimal">
+</div>
+<div class="card"><div class="hint" style="text-align:center">その場所でスタッフを立てたときの読み</div><div class="result"><span id="r">6080</span><small style="font-size:18px"> mm</small></div><div id="eq" class="eq">480 + 5600 = 6080 mm</div>
+<div class="diagram"><svg viewBox="0 0 560 360">
+<line x1="45" y1="80" x2="510" y2="80" stroke="#e53935" stroke-width="4" stroke-dasharray="9 7"/><text x="48" y="65" font-size="16" fill="#c62828">オートレベル視準線</text>
+<line id="base" x1="170" y1="135" x2="510" y2="135" stroke="#f59e0b" stroke-width="6"/><text id="baseT" x="160" y="141" text-anchor="end" font-size="17" font-weight="700">基準点</text>
+<line id="tar" x1="170" y1="300" x2="510" y2="300" stroke="#1683d8" stroke-width="6"/><text id="tarT" x="160" y="306" text-anchor="end" font-size="17" font-weight="700">求めたい場所</text>
+<rect x="455" y="30" width="38" height="300" fill="none" stroke="#333" stroke-width="3"/><text x="474" y="348" text-anchor="middle" font-size="15">スタッフ</text>
+</svg></div></div>
+<div class="card"><div id="explain" class="hint"></div><button id="reset" class="reset">↺ 初期値に戻す</button></div>
+<script>
+const $=x=>document.getElementById(x), n=x=>Math.abs(Number(x)||0), f=x=>Number.isInteger(x)?x:x.toFixed(1);
+let baseBelow=true,targetBelow=true;
+function calc(){
+ let a=n($("a").value),b=n($("b").value),gl=Number($("gl").value)||0;
+ // signed downward distance from sight line to benchmark, then benchmark to target
+ let baseRead=(baseBelow?a:-a);
+ let targetElev=gl+(targetBelow?-b:b);
+ let sightElev=gl+baseRead;
+ let s=sightElev-targetElev;
+ $("r").textContent=f(s);
+ let op1=baseBelow?f(a):"-"+f(a),op2=targetBelow?"+ "+f(b):"- "+f(b);
+ $("eq").textContent=op1+" "+op2+" = "+f(s)+" mm";
+ let gltxt=gl>0?"GL+"+f(gl):gl<0?"GL"+f(gl):"GL±0";
+ $("below").className=baseBelow?"on":"";$("above").className=!baseBelow?"on":"";
+ $("targetBelow").className=targetBelow?"on":"";$("targetAbove").className=!targetBelow?"on":"";
+ let by=baseBelow?140:45,ty=targetBelow?300:Math.max(20,by-120);
+ $("base").setAttribute("y1",by);$("base").setAttribute("y2",by);$("baseT").setAttribute("y",by+6);
+ $("tar").setAttribute("y1",ty);$("tar").setAttribute("y2",ty);$("tarT").setAttribute("y",ty+6);
+ $("below").textContent="↓ "+f(a)+"mm 下";$("above").textContent="↑ "+f(a)+"mm 上";
+ $("explain").innerHTML="<b>基準点："+gltxt+"</b><br>"+(baseBelow
+ ? "基準点が視準線より <b>"+f(a)+"mm下</b>。そこから求めたい場所が <b>"+f(b)+"mm"+(targetBelow?"下":"上")+"</b>なので、スタッフ読みは <b>"+f(s)+"mm</b>。"
+ : "基準点が視準線より <b>"+f(a)+"mm上</b>の場合も、自動で符号を逆にして計算します。");
+}
+$("below").onclick=()=>{baseBelow=true;calc()};$("above").onclick=()=>{baseBelow=false;calc()};
+$("targetBelow").onclick=()=>{targetBelow=true;calc()};$("targetAbove").onclick=()=>{targetBelow=false;calc()};
+["a","b","gl"].forEach(x=>$(x).oninput=calc);
+$("reset").onclick=()=>{$("a").value=480;$("b").value=5600;$("gl").value=0;baseBelow=true;targetBelow=true;calc()};calc();
+</script></div></body></html>
