@@ -1,0 +1,82 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>オートレベル高さ計算</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b1016;color:#fff;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
+.w{max-width:680px;margin:auto;padding:15px}.c{background:#151d26;border:1px solid #293746;border-radius:18px;padding:15px;margin:12px 0}
+h1{font-size:23px;margin:4px 0}.sub,.note{color:#aab8c6}.sub{font-size:13px}.note{font-size:12px;line-height:1.55}
+label{display:block;color:#b4c0cc;font-size:13px;margin:10px 0 5px}
+input{width:100%;padding:13px;border-radius:12px;border:1px solid #405064;background:#0d141c;color:#fff;font-size:20px;font-weight:700}
+.big{text-align:center;font-size:47px;font-weight:900;color:#79c0ff}.small{text-align:center;color:#aab8c6}
+.fig{background:#fff;color:#111;border-radius:15px;padding:8px;margin-top:12px}svg{display:block;width:100%;height:auto}
+.act{text-align:center;font-size:27px;font-weight:900;margin:12px 0}.up{color:#7ee787}.down{color:#ff7b72}.ok{color:#79c0ff}
+.info{background:#0d141c;border-radius:12px;padding:10px;margin-top:10px;font-size:13px;line-height:1.6}
+</style></head><body><div class="w">
+<h1>📐 オートレベル 高さ計算</h1><div class="sub">基準点・機械設置位置・仕上がりを図で確認</div>
+
+<div class="c">
+<label>基準点の高さ（基準線0から・mm）</label><input id="datum" type="number" value="100" inputmode="decimal">
+<label>オートレベル本体の設置高さ（mm）</label><input id="machine" type="number" value="0" inputmode="decimal">
+<div class="note">例：基準点 +100、機械 0 → オートレベル本体が基準点より100mm下。</div>
+<label>基準点にスタッフを立てた時の読み（mm）</label><input id="back" type="number" value="1250" inputmode="decimal">
+<label>仕上がり高さ（基準線0から・mm）</label><input id="goal" type="number" value="30" inputmode="decimal">
+</div>
+
+<div class="c">
+<div class="small">目標スタッフ読み</div><div class="big"><span id="target">—</span><small style="font-size:18px"> mm</small></div>
+<div id="formula" class="small"></div>
+<div class="fig"><svg viewBox="0 0 640 470">
+<line x1="20" y1="400" x2="620" y2="400" stroke="#555" stroke-width="5"/>
+<line x1="250" y1="300" x2="615" y2="300" stroke="#777" stroke-width="3" stroke-dasharray="8 6"/>
+<text x="240" y="306" text-anchor="end" font-size="16">基準線 0</text>
+<!-- machine -->
+<g id="mg"><rect x="40" y="210" width="115" height="45" rx="10" fill="#f5b82e" stroke="#222" stroke-width="4"/>
+<circle cx="160" cy="232" r="16" fill="#444"/><line x1="95" y1="255" x2="95" y2="345" stroke="#333" stroke-width="7"/>
+<line x1="95" y1="315" x2="55" y2="400" stroke="#333" stroke-width="6"/><line x1="95" y1="315" x2="135" y2="400" stroke="#333" stroke-width="6"/>
+<text x="98" y="197" text-anchor="middle" font-size="17" font-weight="700">オートレベル</text></g>
+<!-- sight -->
+<line id="sight" x1="175" y1="232" x2="535" y2="232" stroke="#e53935" stroke-width="4" stroke-dasharray="10 7"/>
+<text id="stxt" x="350" y="218" text-anchor="middle" font-size="16" fill="#c62828">視準線</text>
+<!-- staff -->
+<rect x="535" y="55" width="48" height="345" fill="#fff" stroke="#222" stroke-width="4"/>
+<text x="559" y="40" text-anchor="middle" font-size="18">スタッフ</text>
+<!-- datum -->
+<line id="dl" x1="265" y1="270" x2="610" y2="270" stroke="#f59e0b" stroke-width="6"/>
+<text id="dt" x="255" y="276" text-anchor="end" fill="#a96100" font-size="16" font-weight="700">基準点</text>
+<!-- goal -->
+<line id="gl" x1="265" y1="290" x2="610" y2="290" stroke="#1683d8" stroke-width="6"/>
+<text id="gt" x="255" y="296" text-anchor="end" fill="#1268a0" font-size="16" font-weight="700">仕上がり</text>
+</svg></div>
+<div class="info" id="relation"></div>
+</div>
+
+<div class="c"><label>現在のスタッフ読み（任意・mm）</label><input id="current" type="number" inputmode="decimal" placeholder="例：1320">
+<div id="adjust" class="act ok">現在値を入れると表示</div></div>
+
+<script>
+const $=x=>document.getElementById(x), N=x=>Number(x)||0, F=x=>Number.isInteger(x)?String(x):x.toFixed(1);
+function yy(v){return Math.max(150,Math.min(365,300-v*.35))}
+function calc(){
+ let d=N($('datum').value),m=N($('machine').value),bs=N($('back').value),g=N($('goal').value);
+ // Height of sight is established from known benchmark elevation + backsight.
+ // Machine body elevation is visual/context only; optical axis may be above body depending on setup.
+ let sightH=d+bs, target=sightH-g;
+ $('target').textContent=F(target);
+ $('formula').textContent='視準高 '+F(sightH)+' − 仕上がり '+F(g)+' = '+F(target)+' mm';
+ let dy=yy(d),gy=yy(g),my=yy(m);
+ $('dl').setAttribute('y1',dy);$('dl').setAttribute('y2',dy);$('dt').setAttribute('y',dy+6);$('dt').textContent='基準点 '+(d>=0?'+':'')+F(d);
+ $('gl').setAttribute('y1',gy);$('gl').setAttribute('y2',gy);$('gt').setAttribute('y',gy+6);$('gt').textContent='仕上がり '+(g>=0?'+':'')+F(g);
+ // Move the illustrated instrument body according to entered installation elevation.
+ let tr=my-232;$('mg').setAttribute('transform','translate(0 '+tr+')');
+ // Keep sight line at optical axis of the illustrated instrument for intuitive drawing.
+ $('sight').setAttribute('y1',my);$('sight').setAttribute('y2',my);$('stxt').setAttribute('y',my-14);
+ let rel=m<d?'オートレベル本体は基準点より '+F(d-m)+'mm 下':m>d?'オートレベル本体は基準点より '+F(m-d)+'mm 上':'オートレベル本体と基準点は同じ高さ';
+ $('relation').innerHTML='<b>'+rel+'</b><br>計算上の視準高は「既知の基準点高さ＋基準点でのスタッフ読み」で求めます。機械本体の高さは、位置関係を図で確認するための入力です。';
+ let raw=$('current').value;if(raw===''){$('adjust').className='act ok';$('adjust').textContent='現在値を入れると表示';return}
+ let diff=Number(raw)-target;
+ if(Math.abs(diff)<.01){$('adjust').className='act ok';$('adjust').textContent='✓ 目標ピッタリ'}
+ else if(diff>0){$('adjust').className='act up';$('adjust').textContent='↑ あと '+F(Math.abs(diff))+'mm 上げる'}
+ else{$('adjust').className='act down';$('adjust').textContent='↓ あと '+F(Math.abs(diff))+'mm 下げる'}
+}
+['datum','machine','back','goal','current'].forEach(x=>$(x).addEventListener('input',calc));calc();
+</script></div></body></html>
